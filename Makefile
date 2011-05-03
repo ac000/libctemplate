@@ -1,18 +1,10 @@
 CFLAGS = -I .
 
-template: main.o libctemplate.a
-	$(CC) $(CFLAGS) -o template -L . main.o -lctemplate
-
-libctemplate.a: ctemplate.o
-	ar r libctemplate.a ctemplate.o
-	ranlib libctemplate.a
+libctemplate: ctemplate.o
+	$(CC) $(CFLAGS) -O2 -shared -Wl,-soname,libctemplate.so.1 -o libctemplate.so.1.4.0 ctemplate.o -lc
 
 ctemplate.o: ctemplate.c ctemplate.h
-
-main.o: main.c ctemplate.h
+	$(CC) $(CFLAGS) -fpic -O2 -c ctemplate.c
 
 clean:
-	rm -f *.o *.a template
-
-test:
-	cd t; ./test.sh
+	rm -f *.o libctemplate.so.1.4.0
