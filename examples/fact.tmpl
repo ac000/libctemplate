@@ -1,0 +1,21 @@
+<html>
+<head>
+<title><TMPL_var name = "title"></title>
+</head>
+<body>
+<h1><TMPL_var name = "title"></h1>
+<p>
+<table border=1>
+<tr>
+<th align=right>n</th>
+<th align=right>n!</th>
+</tr>
+<TMPL_LOOP name = "fact">
+    <tr>
+    <td align=right><TMPL_VAR name = "n"></td>
+    <td align=right><TMPL_VAR name = "nfact"></td>
+    </tr>
+</TMPL_LOOP>
+</table>
+</body>
+</html>

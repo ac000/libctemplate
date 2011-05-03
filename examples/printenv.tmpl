@@ -1,0 +1,59 @@
+<*
+The variable list for this template consists of variable "title" and
+two loops named "arg" and "env".  Within "arg" each variable list
+consists of "anum", the argument number and "avalue" the value of
+the argument.  "arg" has a final list with "total", the total number
+of arguments.  Similarly within "env" each variable list consists
+of "ename", the environment variable name, and "evalue" the value.
+"env" has a final list with "total", the total number of environment
+variables.
+*>
+<html>
+<head>
+<title><tmpl_var name = "title"></title>
+</head>
+<body>
+<h2><tmpl_var name = "title"></h2>
+<tmpl_if name = "arg">
+  <p>
+  <table border=1>
+    <tr>
+      <th colspan="2" align="left">Command Line Arguments</th>
+    </tr>
+    <tmpl_loop name = "arg">
+      <tr>
+        <tmpl_if name = "total">
+          <th align = "left" colspan = "2">
+          Total Arguments: <tmpl_var name = "total"></th>
+        <tmpl_else>
+          <td>Argument #<tmpl_var name = "anum"></td>
+          <td><tmpl_var name = "avalue" fmt="entity"></td>
+        </tmpl_if>
+      </tr>
+    </tmpl_loop>
+  </table>
+  </p>
+</tmpl_if>
+
+<tmpl_if name = "env">
+  <p>
+  <table border=1>
+    <tr>
+      <th colspan="2" align="left">Environment Variables</th>
+    </tr>
+    <tmpl_loop name = "env">
+      <tr>
+        <tmpl_if name = "total">
+          <th align = "left" colspan = "2">
+          Total Environment Variables: <tmpl_var name = "total"></th>
+        <tmpl_else>
+          <td>$<tmpl_var name = "ename" fmt = "trunc"></td>
+          <td><tmpl_var name = "evalue" fmt = "trunc"></td>
+        </tmpl_if>
+      </tr>
+    </tmpl_loop>
+  </table>
+  </p>
+</tmpl_if>
+</body>
+</html>

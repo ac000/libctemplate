@@ -1,0 +1,938 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta name="generator" content=
+  "HTML Tidy for Linux/x86 (vers 14 June 2007), see www.w3.org" />
+
+  <title>C Template Library</title>
+  <style type="text/css">
+/*<![CDATA[*/
+  pre {
+    font-family:courier;
+    background:#FFFFCC;
+  }
+  dd, li {
+    margin-top: 0.5em;
+  }
+  dt {
+    margin-top:  1em;
+    margin-left: 8em;
+    text-indent: -8em;
+  }
+  /*]]>*/
+  </style>
+</head>
+
+<body style="width:900px;margin-left:3em">
+  <h1 style="text-align:center">C Template Library 1.0</h1>
+
+  <h2>Contents</h2>
+
+  <table>
+    <tr>
+      <td>
+        <ul>
+          <li><a href="#intro">Introduction</a></li>
+
+          <li><a href="#tmplfile">Template Files</a></li>
+
+          <li><a href="#text">Text Sequences</a></li>
+
+          <li><a href="#comment">Comments</a></li>
+
+          <li><a href="#tags">Template Tags</a></li>
+
+          <li><a href="#ifstmt">The If Statement</a></li>
+
+          <li><a href="#loopstmt">The Loop Statement</a></li>
+        </ul>
+      </td>
+
+      <td>
+        <ul>
+          <li><a href="#types">C Template Library Data
+          Types</a></li>
+
+          <li><a href="#func">C Template Library Functions</a></li>
+
+          <li><a href="#using">Using the C Template
+          Library</a></li>
+
+          <li><a href="#format">Using Format Functions</a></li>
+
+          <li><a href="#command">The <i>template</i>
+          Command</a></li>
+
+          <li><a href="#design">Design Philosophy</a></li>
+        </ul>
+      </td>
+    </tr>
+  </table>
+
+  <h2><a name="intro" id="intro"></a>Introduction</h2>
+
+  <p><i>C Template</i> is a template expander library written in C
+  and is similar to the perl <i>HTML::Template</i> module. Input to
+  the expander is a template file (or string), a <i>variable
+  list</i> (<a href="#types">TMPL_varlist</a>), and an optional
+  <i>format function list</i> (<a href="#types">TMPL_fmtlist</a>).
+  The expander processes the template using the variables in the
+  variable list, and outputs the result.</p>
+
+  <p>Using templates makes it easier to separate <i>information</i>
+  (the variable list) from the <i>presentation</i> (the template
+  file and format functions). You can construct a variable list
+  that can be output in a variety of formats or languages, using
+  different templates. The template language is simple, but
+  powerful enough for you to design flexible templates that handle
+  many different situations. The C Template library is fast and
+  efficient because it is written in C, and the API is easy to
+  use.</p>
+
+  <p>Author: Stephen C. Losen, University of Virginia</p>
+
+  <h2><a name="tmplfile" id="tmplfile"></a>Template Files</h2>
+
+  <p>A template file consists of <i>text sequences</i>, <i>template
+  tags</i> and <i>comments</i>. Text sequences are copied to the
+  output. Template tags are removed from the input, processed, and
+  the result is output. Comments are removed from the input and do
+  not appear in the output.</p>
+
+  <p>The template language supports these features:</p>
+
+  <ul>
+    <li>variable substitution (with optional formatting)</li>
+
+    <li><a href="#ifstmt"><i>if statements</i></a> for defining
+    conditionally expanded template sections</li>
+
+    <li><a href="#loopstmt"><i>loop statements</i></a> for defining
+    repeatedly expanded template sections</li>
+
+    <li>file inclusion</li>
+
+    <li>comments</li>
+  </ul>
+
+  <h2><a name="text" id="text"></a>Text Sequences</h2>
+
+  <p>A <i>text sequence</i> is any sequence of characters that is
+  not a template tag and not a comment. A text sequence is copied
+  unchanged to the output with a few exceptions. You can use a
+  backslash (\) to suppress outputting a line terminator. A single
+  \ at the end of a line is not output and neither is the line
+  terminator. You can escape this behavior with two backslashes
+  (\\) at the end of a line, which is output as a single \ followed
+  by the line terminator. Any other \ is copied unchanged to the
+  output.</p>
+
+  <h2><a name="comment" id="comment"></a>Comments</h2>
+
+  <p>Any text (including template tags and line terminators)
+  enclosed by &lt;* and *&gt; is a comment, which the expander does
+  not output. Comments cannot be nested. Within a comment &lt;* is
+  ignored and the comment ends at the first *&gt; A *&gt; without a
+  preceding &lt;* is considered ordinary text. A &lt;* without a
+  following *&gt; is an error. Template tags may not contain
+  comments because inserting a comment into a tag splits it into
+  ordinary text sequences. If your template needs to output a
+  literal &lt;*, you can split &lt; and * with a short comment like
+  this: &lt;&lt;**&gt;*.</p>
+
+  <p>You are certainly free to use comments supported by whatever
+  language that your template outputs. For example, you can use
+  HTML comments such as &lt;!-- this is a comment --&gt;. The
+  template expander treats this as ordinary text and copies it to
+  the output.</p>
+
+  <h2><a name="tags" id="tags"></a>Template Tags</h2>
+
+  <p>The template language has the following tags.</p>
+
+  <dl>
+    <dt>&lt;TMPL_VAR name="varname" default="value"
+    fmt="fmtname"&gt;</dt>
+
+    <dd>
+      Variable substitution. The tag is replaced in the output with
+      the value of the variable named <i>varname</i>. If
+      <i>varname</i> does not exist, then the tag disappears in the
+      output, unless you specify a default value to output with the
+      optional <i>default="value"</i> attribute. If <i>varname</i>
+      exists, but has a null value (""), then the null value is
+      output.
+
+      <p>Usually the value is output without modification. The
+      optional <i>fmt="fmtname"</i> attribute specifies a <a href=
+      "#format"><i>format function</i></a> that the expander calls
+      to output the value with appropriate formatting or encoding.
+      The format function is also called when a tag's default value
+      is output.</p>
+    </dd>
+
+    <dt><a name="iftag" id="iftag"></a> &lt;TMPL_IF name="varname"
+    value="testvalue"&gt;</dt>
+
+    <dd>
+      Introduces an <a href="#ifstmt">if statement</a>. The
+      <i>value="testvalue"</i> attribute is optional. The tag
+      evaluates to true or false as follows:
+
+      <dl>
+        <dt>&lt;TMPL_IF name="varname"&gt;</dt>
+
+        <dd>is true if variable <i>varname</i> exists and has a
+        non-null value, otherwise false. You can also use this to
+        test for the existence of a <a href="#types">loop
+        variable</a>.</dd>
+
+        <dt>&lt;TMPL_IF name="varname" value="testvalue"&gt;</dt>
+
+        <dd>is true if variable <i>varname</i> exists and has the
+        value <i>testvalue</i>, otherwise false.</dd>
+
+        <dt>&lt;TMPL_IF name="varname" value=""&gt;</dt>
+
+        <dd>is true if variable <i>varname</i> does not exist or
+        has a null value, otherwise false. You can also use this to
+        test for the non-existence of a <a href="#types">loop
+        variable</a>.</dd>
+      </dl>
+    </dd>
+
+    <dt>&lt;TMPL_ELSIF name="varname" value="testvalue"&gt;</dt>
+
+    <dd>A component of an <a href="#ifstmt">if statement</a>. The
+    <i>value="testvalue"</i> attribute is optional. The TMPL_ELSIF
+    tag evaluates to true or false using the same rules as the
+    TMPL_IF tag.</dd>
+
+    <dt>&lt;TMPL_ELSE&gt;</dt>
+
+    <dd>A component of an <a href="#ifstmt">if statement</a>.</dd>
+
+    <dt>&lt;/TMPL_IF&gt;</dt>
+
+    <dd>Terminates an <a href="#ifstmt">if statement</a>.</dd>
+
+    <dt>&lt;TMPL_LOOP name="loopname"&gt;</dt>
+
+    <dd>Introduces a <a href="#loopstmt">loop statement</a> where
+    <i>loopname</i> is the name of a <a href="#types"><i>loop
+    variable</i></a>, which is a list of variable lists.</dd>
+
+    <dt>&lt;TMPL_BREAK level=<i>N</i>&gt;</dt>
+
+    <dd>Loop break. This tag must always be inside of a <a href=
+    "#loopstmt">loop statement</a>. It causes the current iteration
+    of the loop statement to stop and processing resumes
+    immediately after the loop statement. By default TMPL_BREAK
+    breaks out of the closest surrounding loop statement, whose
+    <i>nesting level</i> is one. The optional <i>level=N</i>
+    attribute, where <i>N</i> is a number greater than zero, can be
+    used to specify a loop statement at a higher nesting level,
+    i.e., a loop statement that surrounds the closest surrounding
+    loop statement.</dd>
+
+    <dt>&lt;TMPL_CONTINUE level=<i>N</i>&gt;</dt>
+
+    <dd>Loop continue. This tag must always be inside of a <a href=
+    "#loopstmt">loop statement</a>. It causes the current iteration
+    of the loop statement to stop and processing resumes at the
+    beginning of the next loop iteration. By default the
+    TMPL_CONTINUE tag operates on the closest surrounding loop
+    statement and the optional <i>level=N</i> attribute has the
+    same purpose as in the TMPL_BREAK tag.</dd>
+
+    <dt>&lt;/TMPL_LOOP&gt;</dt>
+
+    <dd>Terminates a <a href="#ifstmt">loop statement</a>.</dd>
+
+    <dt>&lt;TMPL_INCLUDE name="filename"&gt;</dt>
+
+    <dd>
+      File inclusion. The tag is replaced with the contents of
+      template file <i>filename</i> and the result is expanded. The
+      included file must be a syntactically correct and complete
+      template. For example, you cannot have a TMPL_IF tag in one
+      file and have its corresponding &lt;/TMPL_IF&gt; in another
+      file. However, you can place TMPL_INCLUDE tags inside of if
+      statements or inside of loop statements. The included file is
+      not actually opened and processed until the flow of control
+      reaches the TMPL_INCLUDE tag. An included file may include
+      other files, which may also include files, up to a depth of
+      thirty. Exceeding this limit is an error and probably
+      indicates a cycle where a file includes itself either
+      directly or indirectly.
+
+      <p>If <i>filename</i> begins with .../ then ... is replaced
+      with the directory name of the enclosing template filename.
+      If there is no directory name (no slash) then the .../ is
+      removed. For example, if the enclosing file is
+      dir/templates/main.tmpl and <i>filename</i> is
+      .../include/incl1.tmpl, then the result is
+      dir/templates/include/incl1.tmpl.</p>
+    </dd>
+  </dl>
+
+  <p>Template tag syntax has these features.</p>
+
+  <ul>
+    <li>For better compatibility with XML and XHTML, any tag except
+    for TMPL_IF, &lt;/TMPL_IF&gt;, TMPL_LOOP and &lt;/TMPL_LOOP&gt;
+    may be terminated by /&gt;. For example, &lt;TMPL_VAR
+    name="varname" /&gt;.</li>
+
+    <li>You may camouflage a template tag so that it looks like a
+    HTML comment by surrounding it with &lt;!-- and --&gt;, such as
+    &lt;!-- TMPL_VAR name="varname" --&gt;. This can make template
+    tags more palatable to tools that understand HTML.</li>
+
+    <li>In an attribute such as <i>value="testvalue"</i>, the
+    attribute value <i>testvalue</i> may be surrounded by double
+    quotes (") or single quotes ('). If <i>testvalue</i> consists
+    of only letters or digits or . or - , then quotes are not
+    required, but still recommended. Any text may be enclosed
+    within quotes except for line terminators. To place a double
+    quote within quotes, use single quotes, and vice versa.</li>
+
+    <li>Tag attributes can come in any order. For example,
+    &lt;TMPL_VAR name="varname" default="value"&gt; is the same as
+    &lt;TMPL_VAR default="value" name="varname"&gt;.</li>
+
+    <li>The tag name and attribute names are case insensitive, but
+    attribute values are case sensitive. For example, &lt;tmpl_if
+    NAME=varname Value="testvalue"&gt; is the same as &lt;TMPL_IF
+    name=varname value="testvalue"&gt;.</li>
+
+    <li><i>White space</i> is any sequence of spaces, tabs or line
+    terminators. As with HTML tags, white space is not allowed
+    between a beginning &lt; and the tag name. However, white space
+    is optional between a beginning &lt;!-- and the tag name. If a
+    tag has any attributes, then white space is required between
+    the tag name and the first attribute. Otherwise, white space is
+    optional. For example, here is a tag with minimal white space
+    followed by the same tag with white space inserted everywhere
+    that it is allowed.<br />
+    &lt;TMPL_IF &nbsp; name="varname"value="testvalue"&gt;
+    &nbsp;<br />
+    &lt;TMPL_IF &nbsp; name &nbsp; = &nbsp; "varname" &nbsp; value
+    &nbsp; = &nbsp; "testvalue" &nbsp; &gt;</li>
+
+    <li>If you do not surround an attribute value with quotes then
+    you may need white space to separate it from what follows. For
+    example, the white space in this tag is necessary:
+    &lt;!--TMPL_IF &nbsp; name=varname &nbsp; value=testvalue
+    &nbsp; --&gt;.</li>
+
+    <li>Any text that looks like a template tag (but is not a legal
+    tag) is copied to the output as if it were ordinary text, and
+    you get a warning message indicating that the bad tag was
+    ignored. For example, &lt;TMPL_VAR color="red"&gt; and
+    &lt;TMPL_LOOP name=&gt; would be handled this way.</li>
+
+    <li>Template tags are recognized without any regard for the
+    surrounding text, so you can combine template tags with HTML
+    tags in unusual ways. For example, the following looks odd but
+    works fine: &nbsp; &lt;a
+    href="&lt;TMPL_VAR&nbsp;name="link"&gt;"&gt;</li>
+
+    <li>Although template tags look like HTML tags, your template
+    does not have to output HTML, it can output whatever you
+    want.</li>
+  </ul>
+
+  <h2><a name="ifstmt" id="ifstmt"></a>The If Statement</h2>
+
+  <p>The syntax of the if statement is</p>
+
+  <dl>
+    <dt>&lt;TMPL_IF name="varname" value="testvalue"&gt;</dt>
+
+    <dd><i>template-list</i></dd>
+
+    <dt>&lt;TMPL_ELSIF name="varname" value="testvalue"&gt;</dt>
+
+    <dd><i>template-list</i></dd>
+
+    <dt>&lt;TMPL_ELSE&gt;</dt>
+
+    <dd><i>template-list</i></dd>
+
+    <dt>&lt;/TMPL_IF&gt;</dt>
+  </dl>
+
+  <p>A <i>template-list</i> is any sequence (including an empty
+  sequence) of comments, text sequences, template tags, if
+  statements, or loop statements. One TMPL_IF tag is required and
+  must come first. There can be zero or more TMPL_ELSIF tags and
+  zero or one &lt;TMPL_ELSE&gt;, which must come after any
+  TMPL_ELSIF tags. The final &lt;/TMPL_IF&gt; is always required.
+  Any other use of these tags is an error.</p>
+
+  <p>Zero or one of the template-lists in an if statement is
+  expanded and the rest of the if statement disappears. The TMPL_IF
+  and TMPL_ELSIF tags are <a href="#iftag">evaluated</a> in order
+  until a tag evaluates to true. Then the template-list immediately
+  following the true tag is expanded. If no tags are true then the
+  template-list after the &lt;TMPL_ELSE&gt; is expanded. Since the
+  &lt;TMPL_ELSE&gt; is optional, possibly no template-lists are
+  expanded and the entire if statement disappears.</p>
+
+  <p>The if statement syntax shown above is formatted for
+  readability. You can format if statements any way you want, such
+  as putting an entire if statement on one line. The same is true
+  for loop statements.</p>
+
+  <h2><a name="loopstmt" id="loopstmt"></a>The Loop Statement</h2>
+
+  <p>The syntax of the loop statement is</p>
+
+  <dl>
+    <dt>&lt;TMPL_LOOP name="loopname"&gt;</dt>
+
+    <dd><i>template-list</i></dd>
+
+    <dt>&lt;/TMPL_LOOP&gt;</dt>
+  </dl>
+
+  <p>Any other use of these tags is an error. <i>Loopname</i> is
+  the name of a <a href="#types"><i>loop variable</i></a>, which is
+  a list of variable lists. Each variable list is essentially a
+  <i>row of data</i>. If <i>loopname</i> does not exist, then the
+  loop statement silently disappears. Otherwise the template-list
+  is expanded repeatedly, one time for each variable list (row) in
+  <i>loopname</i>. Within the template-list you can refer to
+  variables in <i>loopname's</i> current variable list and refer to
+  variables in enclosing variable lists, such as the variable list
+  that contains <i>loopname</i>. A variable in an inner list
+  overrides a variable with the same name in an enclosing list.</p>
+
+  <p>Within a loop statement you can use the TMPL_BREAK tag to
+  break out of the loop and resume processing immediately after the
+  loop statement. Or you can use the TMPL_CONTINUE tag to skip the
+  rest of the current loop iteration and resume at the beginning of
+  the next iteration.</p>
+
+  <h2><a name="types" id="types"></a>C Template Library Data
+  Types</h2>
+
+  <p>In your C source you include the <i>ctemplate.h</i> header
+  file, which declares these data types.</p>
+
+  <dl>
+    <dt>TMPL_varlist</dt>
+
+    <dd>is a <i>variable list</i>, which is a list of <i>simple
+    variables</i> and/or <i>loop variables</i>. A simple variable
+    is a name and value, both null terminated strings.</dd>
+
+    <dt>TMPL_loop</dt>
+
+    <dd>is a <i>loop variable</i>, which is a name and a list of
+    variable lists (rows of data).</dd>
+
+    <dt>TMPL_fmtlist</dt>
+
+    <dd>is a <i>format function list</i>, which is a list of
+    functions that the template expander calls to output variables.
+    Each list entry consists of a function pointer and a name that
+    TMPL_VAR tags use to select the function.</dd>
+
+    <dt>TMPL_fmtfunc</dt>
+
+    <dd>
+      is a format function pointer, which has this declaration:
+
+      <p>typedef void (*TMPL_fmtfunc)(const char *, FILE *);</p>
+    </dd>
+  </dl>
+
+  <h2><a name="func" id="func"></a>C Template Library
+  Functions</h2>
+
+  <p>The C Template library provides these functions.</p>
+
+  <ul>
+    <li><a href="#TMPL_write">TMPL_write()</a> expands and outputs
+    a template.</li>
+
+    <li><a href="#TMPL_add_var">TMPL_add_var()</a> adds simple
+    variables to a variable list.</li>
+
+    <li><a href="#TMPL_add_varlist">TMPL_add_varlist()</a> adds a
+    variable list to a loop variable.</li>
+
+    <li><a href="#TMPL_add_loop">TMPL_add_loop</a> adds a loop
+    variable to a variable list.</li>
+
+    <li><a href="#TMPL_add_fmt">TMPL_add_fmt</a> adds a function to
+    a format function list.</li>
+
+    <li><a href="#TMPL_free_varlist">TMPL_free_varlist()</a> frees
+    memory used by a variable list.</li>
+
+    <li><a href="#TMPL_free_fmtlist">TMPL_free_fmtlist()</a> frees
+    memory used by a format function list.</li>
+  </ul>
+
+  <p>These functions are reentrant because they do not use global
+  variables or static local variables, so you can use this library
+  with threads.</p>
+
+  <p>Some functions accept null terminated string parameters of
+  type <i>const&nbsp;char&nbsp;*</i>. These functions make copies
+  of strings as necessary so that after the function returns you
+  can safely do anything you want with any string that you have
+  passed as a parameter.</p>
+
+  <dl>
+    <dt>int <a name="TMPL_write" id="TMPL_write"></a>TMPL_write
+    (const char *filename, const char *tmplstr, const TMPL_fmtlist
+    *fmtlist, const TMPL_varlist *varlist, FILE *out, FILE
+    *errout);</dt>
+
+    <dd>TMPL_write() processes a template file and a variable list
+    and outputs the result. Parameter <i>filename</i> is the name
+    of the template file. If parameter <i>tmplstr</i> is non-null,
+    then it is the template, a null terminated string. (You can
+    still pass a name for the template in <i>filename</i>, which
+    will appear in error messages.) Parameter <i>fmtlist</i> (which
+    may be null) is an optional format function list that the
+    template uses to output variables. Parameter <i>varlist</i> is
+    a variable list and parameter <i>out</i> is an open file
+    pointer where the result is written. Error messages are written
+    to open file pointer <i>errout</i>, which may be null to
+    suppress error messages. If successful, TMPL_write() returns
+    zero, otherwise -1. TMPL_write() fails if the template file (or
+    any included file) cannot be opened or if any template file has
+    syntax errors.</dd>
+
+    <dt>TMPL_varlist *<a name="TMPL_add_var" id=
+    "TMPL_add_var"></a>TMPL_add_var (TMPL_varlist *varlist, const
+    char *name1, const char *value1, ..., 0);</dt>
+
+    <dd>TMPL_add_var() adds one or more simple variables to
+    variable list <i>varlist</i>. If <i>varlist</i> is null, then a
+    new variable list is created and returned, otherwise
+    <i>varlist</i> is returned. After <i>varlist</i> comes an even
+    number of <i>const&nbsp;char&nbsp;*</i> parameters, which are
+    null terminated strings. Each pair of strings is a variable
+    name and value to be added to <i>varlist</i>. <b>The parameter
+    list must be terminated by a null pointer.</b> If the parameter
+    list does not contain at least one name and value, then
+    TMPL_add_var() returns <i>varlist</i> without doing anything.
+    If you add a new variable to a list that already has a variable
+    with the same name, then the new variable overrides the old
+    variable. You may add variables to <i>varlist</i> even if
+    <i>varlist</i> was previously added to a loop variable with
+    TMPL_add_varlist().</dd>
+
+    <dt>TMPL_loop *<a name="TMPL_add_varlist" id=
+    "TMPL_add_varlist"></a>TMPL_add_varlist (TMPL_loop *loop,
+    TMPL_varlist *varlist);</dt>
+
+    <dd>TMPL_add_varlist() adds variable list <i>varlist</i> to
+    loop variable <i>loop</i>. If <i>loop</i> is null, then a new
+    loop variable is created and returned, otherwise <i>loop</i> is
+    returned. If <i>varlist</i> is null, or if <i>varlist</i> has
+    already been added to a loop variable, or if <i>varlist</i>
+    contains <i>loop</i> (which would create a cycle), then
+    TMPL_add_varlist() returns <i>loop</i> without doing anything.
+    You may add <i>varlist</i> to <i>loop</i> even if <i>loop</i>
+    was previously added to a variable list with TMPL_add_loop(). A
+    loop statement processes the variable lists (rows) in
+    <i>loop</i> in the same order that they were added.</dd>
+
+    <dt>TMPL_varlist *<a name="TMPL_add_loop" id=
+    "TMPL_add_loop"></a>TMPL_add_loop (TMPL_varlist *varlist, const
+    char *name, TMPL_loop *loop);</dt>
+
+    <dd>TMPL_add_loop() adds loop variable <i>loop</i> to variable
+    list <i>varlist</i>, setting the name of <i>loop</i> to
+    <i>name</i>. If <i>varlist</i> is null, then a new variable
+    list is created and returned, otherwise <i>varlist</i> is
+    returned. If <i>name</i> is null, or if <i>loop</i> is null, or
+    if <i>loop</i> has already been added to a variable list, or if
+    <i>loop</i> contains <i>varlist</i> (which would create a
+    cycle), then TMPL_add_loop() returns <i>varlist</i> without
+    doing anything. You may add <i>loop</i> to <i>varlist</i> even
+    if <i>varlist</i> was previously added to a loop variable with
+    TMPL_add_varlist().</dd>
+
+    <dt>TMPL_fmtlist *<a name="TMPL_add_fmt" id=
+    "TMPL_add_fmt"></a>TMPL_add_fmt (TMPL_fmtlist *fmtlist, const
+    char *name, TMPL_fmtfunc fmtfunc);</dt>
+
+    <dd>
+      TMPL_add_fmt() adds the string <i>name</i> and the function
+      pointer <i>fmtfunc</i> to format function list
+      <i>fmtlist</i>. If <i>fmtlist</i> is null, then a new format
+      function list is created and returned, otherwise
+      <i>fmtlist</i> is returned. Parameter <i>name</i> is the name
+      that TMPL_VAR tags use to select the function. If <i>name</i>
+      is null or if <i>fmtfunc</i> is null, then nothing happens
+      and <i>fmtlist</i> is returned.
+
+      <p>If you write your own format function, then it must have a
+      prototype like this:</p>
+
+      <p>void yourfunc(const char *value, FILE *out);</p>
+
+      <p>and it should output <i>value</i> to open file pointer
+      <i>out</i>, with appropriate formatting or encoding.</p>
+    </dd>
+
+    <dt>void <a name="TMPL_free_varlist" id=
+    "TMPL_free_varlist"></a>TMPL_free_varlist (TMPL_varlist
+    *varlist);</dt>
+
+    <dd>TMPL_free_varlist() frees all memory used by variable list
+    <i>varlist</i>. Because variable lists can contain loop
+    variables, which in turn consist of variable lists, a variable
+    list can be a rather elaborate tree. To free the entire tree,
+    call TMPL_free_varlist() once, passing the variable list at the
+    root of the tree.</dd>
+
+    <dt>void <a name="TMPL_free_fmtlist" id=
+    "TMPL_free_fmtlist"></a>TMPL_free_fmtlist (TMPL_fmtlist
+    *fmtlist);</dt>
+
+    <dd>TMPL_free_fmtlist() frees all memory used by format
+    function list <i>fmtlist</i>.</dd>
+  </dl>
+
+  <h2><a name="using" id="using"></a>Using the C Template
+  Library</h2>
+
+  <p>In your C source, include <i>stdio.h</i> and
+  <i>ctemplate.h</i> and link your program with
+  <i>libctemplate.a</i>.</p>
+  <pre>
+#include &lt;stdio.h&gt;
+#include &lt;ctemplate.h&gt;
+
+int main(int argc, char **argv) {
+    TMPL_varlist *mylist;   /* declare the variable list */
+
+    /* load the variable list with TMPL_add_var()  */
+
+    mylist = TMPL_add_var(0, "var1", "value1", "var2", "value2", 0);
+    mylist = TMPL_add_var(mylist, "var3", "value3", 0);
+    TMPL_add_var(mylist, "var4", "value4", 0);
+
+    /* output the template */
+
+    TMPL_write("tmplfile", 0, 0, mylist, stdout, stderr);
+
+    /* TMPL_write() frees any memory that it allocates. */
+
+    TMPL_free_varlist(mylist);   /* free the variable list */
+    return 0;
+}
+</pre>
+
+  <p>Constructing a loop variable for a loop statement is a bit
+  trickier. Construct variable lists with TMPL_add_var() and add
+  each one to the loop variable with TMPL_add_varlist(). Add the
+  loop variable to the main variable list with TMPL_add_loop().</p>
+  <pre>
+#include &lt;stdio.h&gt;
+#include &lt;ctemplate.h&gt;
+
+int main(int argc, char **argv) {
+    TMPL_varlist *vl, *mainlist;
+    TMPL_loop    *loop;
+
+    /* build the loop variable */
+
+    loop = 0;
+    vl = TMPL_add_var(0, "row", "one", "user", "Bill", 0);
+    loop = TMPL_add_varlist(loop, vl);
+    vl = TMPL_add_var(0, "row", "two", "user", "Susan", 0);
+    loop = TMPL_add_varlist(loop, vl);
+    TMPL_add_varlist(loop, TMPL_add_var(0, "row", "three", "user", "Jane", 0));
+
+    /* add the loop variable to the main variable list */
+
+    mainlist = TMPL_add_loop(0, "myloop", loop);
+
+    /* output the template and free variable list memory */
+
+    TMPL_write("tmplfile", 0, 0, mainlist, stdout, stderr);
+
+    TMPL_free_varlist(mainlist);
+    return 0;
+}
+</pre>
+
+  <p>Here is an example template for expanding the loop.</p>
+  <pre>
+Before loop.
+&lt;TMPL_LOOP name = "myloop"&gt;
+    This is row &lt;TMPL_VAR name = "row"&gt;
+    and the user is &lt;TMPL_VAR name = "user"&gt;
+&lt;/TMPL_LOOP&gt;
+After loop.
+</pre>
+
+  <p>Here is the output.</p>
+  <pre>
+Before loop.
+
+    This is row one
+    and the user is Bill
+
+    This is row two
+    and the user is Susan
+
+    This is row three
+    and the user is Jane
+
+After loop.
+</pre>
+
+  <p>Those blank lines appear because all the line terminators in
+  the template file are outside of template tags and are therefore
+  copied to the output. You can suppress outputting a line
+  terminator by preceding it with a <a href="#text">backslash</a>
+  (\) or enclosing it in a comment.</p>
+
+  <p>Nested loops are supported with no limit to the depth of
+  nesting. You can build a loop variable, add it to a variable list
+  and then add the variable list to an enclosing loop variable,
+  etc.</p>
+
+  <p>Cycles are not permitted, however. You cannot add a loop
+  variable to a variable list that is contained by the loop
+  variable and you cannot add a variable list to a loop variable
+  that is contained by the variable list. A loop variable can be
+  added to a variable list one time only and a variable list can be
+  added to a loop variable one time only. The template library
+  enforces these rules by silently declining to perform any illegal
+  operation.</p>
+
+  <h2><a name="format" id="format"></a>Using Format Functions</h2>
+
+  <p>To better separate <i>information</i> from
+  <i>presentation</i>, you may want to store unformatted strings in
+  a variable list and let the template expander format the strings
+  when outputting them. That way the same variable list can be
+  output in a variety of formats by passing it to different
+  templates. For example, your variable list may have a variable
+  named <i>greeting</i> with value <i>&lt;&lt;HELLO&gt;&gt;</i>
+  that you want to insert into a HTML document. You could convert
+  this string to <i>&amp;lt;&amp;lt;HELLO&amp;gt;&amp;gt;</i>
+  before storing it in the variable list, but that encoding is
+  specific to HTML, making the variable list unsuitable for a
+  template that outputs something other than HTML.</p>
+
+  <p>To solve this problem use a TMPL_VAR tag such as &lt;TMPL_VAR
+  name="greeting" fmt="entity"&gt;, where <i>fmt="entity"</i>
+  specifies a format function that does the necessary conversion.
+  The expander calls this function to output the value of
+  <i>greeting</i>.</p>
+
+  <p>You are welcome to write your own format functions and for
+  your convenience the C Template library includes these functions
+  that are helpful when outputting HTML.</p>
+
+  <dl>
+    <dt>void TMPL_encode_entity(const char *value, FILE *out);</dt>
+
+    <dd>TMPL_encode_entity() outputs <i>value</i> with the
+    following conversions: &amp; becomes &amp;amp; &lt; becomes
+    &amp;lt; &gt; becomes &amp;gt; " becomes &amp;quot; ' becomes
+    &amp;#39; <i>newline</i> becomes &amp;#10; and <i>return</i>
+    becomes &amp;#13;&nbsp;. For security it is always a good idea
+    to sanitize any user input before outputting it, and
+    TMPL_encode_entity() is very useful for this.</dd>
+
+    <dt>void TMPL_encode_url(const char *value, FILE *out);</dt>
+
+    <dd>TMPL_encode_url() outputs <i>value</i> converting space to
+    + and any other character that is not a letter or digit or . or
+    - or _ to <i>%xx</i> where <i>xx</i> is the character's numeric
+    code expressed as two hexadecimal digits.</dd>
+  </dl>
+
+  <p>To allow the attribute <i>fmt="entity"</i> to be used in
+  TMPL_VAR tags, you must add the name <i>entity</i> and the
+  function pointer <i>TMPL_encode_entity</i> to a format function
+  list with TMPL_add_fmt() and pass the format function list to
+  TMPL_write().</p>
+  <pre>
+TMPL_varlist *varlist;
+TMPL_fmtlist *fmtlist;
+
+fmtlist = TMPL_add_fmt(0, "entity", TMPL_encode_entity);
+varlist = TMPL_add_var(0, "greeting", "&lt;&lt;HELLO&gt;&gt;", 0);
+TMPL_write("tmplfile", 0, fmtlist, varlist, stdout, stderr);
+TMPL_free_varlist(varlist);
+TMPL_free_fmtlist(fmtlist);
+</pre>
+
+  <h2><a name="command" id="command"></a>The <i>template</i>
+  Command</h2>
+
+  <p>The C Template library comes with a program named
+  <i>template</i>, which takes a template file name and variable
+  list on the command line and outputs the result on stdout. This
+  command is handy for checking a template file for syntax errors
+  and for testing a template with a variety of input data.</p>
+
+  <p>The <i>template</i> command uses the format functions
+  TMPL_encode_entity() and TMPL_encode_url(), which you can select
+  in TMPL_VAR tags with <i>fmt="entity"</i> and <i>fmt="url"</i>,
+  respectively.</p>
+
+  <p>Usage: <b>template</b> <i>filename</i> <i>varname1</i>
+  <i>value1</i> <i>varname2</i> <i>value2</i> ...</p>
+
+  <p>where <i>filename</i> is a template file and the rest of the
+  arguments are variable names and values, each of which must be a
+  separate argument.</p>
+  <pre>
+template weather.tmpl title "Current Weather" temp 62 \
+    dewpoint 45 windspeed 8 windgust 15 winddir WNW \
+    condition "mostly sunny"
+</pre>
+
+  <p>You can also define a loop variable with its name followed by
+  one or more variable lists, each enclosed by { and }.</p>
+  <pre>
+template tmplfile myloop { row one user Bill } \
+    { row two user Susan } { row three user Jane }
+</pre>
+
+  <p>Each { and } must be a separate argument. A loop variable can
+  appear anywhere that a simple name/value pair may appear, so they
+  can be nested, which is necessary if the template has nested
+  loops. For example,</p>
+  <pre>
+template tmplfile title "Nested Loops" \
+  outerloop \
+    { var1 first  innerloop { var2 third } { var2 fourth } } \
+    { var1 second innerloop { var2 fifth } { var2 sixth  } }
+</pre>
+
+  <p>The template file might look like this.</p>
+  <pre>
+&lt;h1&gt;&lt;TMPL_VAR name = "title"&gt;&lt;/h1&gt;
+&lt;TMPL_LOOP name = "outerloop"&gt;
+    Begin outer loop
+    &lt;TMPL_LOOP name = "innerloop"&gt;
+        Begin inner loop
+        The value of var1 is &lt;TMPL_VAR name = "var1"&gt;
+        The value of var2 is &lt;TMPL_VAR name = "var2"&gt;
+        End inner loop
+    &lt;/TMPL_LOOP&gt;
+    End outer loop
+&lt;/TMPL_LOOP&gt;
+End template
+</pre>
+
+  <p>And here is the output.</p>
+  <pre>
+&lt;h1&gt;Nested Loops&lt;/h1&gt;
+
+    Begin outer loop
+    
+        Begin inner loop
+        The value of var1 is first
+        The value of var2 is third
+        End inner loop
+    
+        Begin inner loop
+        The value of var1 is first
+        The value of var2 is fourth
+        End inner loop
+    
+    End outer loop
+
+    Begin outer loop
+    
+        Begin inner loop
+        The value of var1 is second
+        The value of var2 is fifth
+        End inner loop
+    
+        Begin inner loop
+        The value of var1 is second
+        The value of var2 is sixth
+        End inner loop
+    
+    End outer loop
+
+End template
+</pre>
+
+  <p>See the examples directory and the t/test.sh script for more
+  examples.</p>
+
+  <h2><a name="design" id="design"></a>Design Philosophy</h2>
+
+  <p>The template language was designed to provide as much
+  functionality as possible while keeping the syntax as simple as
+  possible. In particular, TMPL_IF supports only rudimentary tests
+  of variable values. While it would be nice if TMPL_IF supported
+  more general expressions, this would greatly complicate the
+  syntax.</p>
+
+  <p>The deficiencies of TMPL_IF can be mitigated by coding
+  complicated logic in the C program and saving the result in a
+  template variable. Then the template can use the rudimentary
+  TMPL_IF syntax to test this variable. For example, suppose we
+  have a template that outputs total disk space, used disk space
+  and available space and we want this information to appear in red
+  when over 90% of the space is used. The template language
+  provides no direct way to accomplish this, but we can easily do
+  the necessary calculation in C and set another template variable
+  named <i>almost_full</i> when the information should appear in
+  red.</p>
+  <pre>
+&lt;p&gt;
+  &lt;TMPL_IF name="almost_full"&gt;&lt;font color="red"&gt;&lt;/TMPL_IF&gt;
+  Total: &lt;TMPL_VAR name="total"&gt;
+  Used:  &lt;TMPL_VAR name="used"&gt;
+  Available: &lt;TMPL_VAR name="avail"&gt;
+  &lt;TMPL_IF name="almost_full"&gt;&lt;/font&gt;&lt;/TMPL_IF&gt;
+&lt;/p&gt;
+</pre>
+
+  <p>Similarly, TMPL_LOOP has no support for complicated logic and
+  does little more than iterate through a list of variable lists.
+  However, most of the functionality that TMPL_LOOP lacks can be
+  easily provided by the C program and passed to the template in
+  variables. Suppose we are displaying a very long HTML table and
+  we would like to output a row of column headers every 25 rows so
+  that the reader does not need to scroll all the way back to the
+  top of the table to see them. The TMPL_LOOP statement has no
+  built in support for this, but in our C program we can easily
+  keep count of the rows and insert an extra template variable
+  named "need_headers" on every 25th row.</p>
+  <pre>
+&lt;TMPL_LOOP name="table_rows"&gt;
+  &lt;TMPL_IF name="need_headers"&gt;
+    &lt;tr&gt;
+    &lt;th&gt;Col Header1&lt;/th&gt;
+    &lt;th&gt;Col Header2&lt;/th&gt;
+    &lt;th&gt;Col Header3&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/TMPL_IF&gt;
+  &lt;tr&gt;
+  &lt;td&gt;&lt;TMPL_VAR name="colvar1"&gt;&lt;/td&gt;
+  &lt;td&gt;&lt;TMPL_VAR name="colvar2"&gt;&lt;/td&gt;
+  &lt;td&gt;&lt;TMPL_VAR name="colvar3"&gt;&lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/TMPL_LOOP&gt;
+</pre>
+
+  <p>You can also use (abuse?) format functions to provide more
+  complicated logic, since a format function can potentially do
+  just about anything.</p>
+</body>
+</html>

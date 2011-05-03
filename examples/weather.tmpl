@@ -1,0 +1,28 @@
+<html>
+<head>
+<title><TMPL_VAR name="title"></title>
+</head>
+<body>
+
+<h1><TMPL_VAR name="title"></h1>
+<table border=1>
+<tr>
+<th align="center" colspan=2>
+<TMPL_IF name = "date">
+  <TMPL_VAR name="date">
+<TMPL_ELSE>
+  <TMPL_VAR name="weekday"> <TMPL_VAR name="month">
+  <TMPL_VAR name="day">, <TMPL_VAR name="year">
+  <TMPL_VAR name="hour">:<TMPL_VAR name="min">:<TMPL_VAR name="sec">
+</TMPL_IF>
+</th>
+</tr>
+<TMPL_LOOP name="loop">
+<tr>
+<th align="left"><TMPL_VAR name="header">:</th>
+<td><TMPL_VAR name="value"></td>
+</tr>
+</TMPL_LOOP>
+</table>
+</body>
+</html>
