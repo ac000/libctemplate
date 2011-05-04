@@ -1,0 +1,4 @@
+ctemplate.o
+libctemplate.so*
+
+.*
