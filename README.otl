@@ -1,0 +1,12 @@
+This branch (otl) of libctemplate, just contains the library code and not the
+examples, test or template program.
+
+This branch has only minor modifications from upstream.
+
+    1) The inclusion of fcgi_stdio.h in ctemplate.c
+
+This is to make it work in a FastCGI environment.
+
+    2) Build the library as a dynamic shared object (.so)
+
+Previously the library was being built as a static package (.a)
