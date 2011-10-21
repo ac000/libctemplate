@@ -1,4 +1,3 @@
 ctemplate.o
 libctemplate.so*
-
-.*
+*.swp
