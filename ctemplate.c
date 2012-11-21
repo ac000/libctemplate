@@ -40,8 +40,10 @@
  * to link the tagnodes into a parse tree.
  */
 
+#ifdef _HAVE_FCGI
 /* we need this header, so that the fastcgi stdio wrappers get used */
 #include <fcgi_stdio.h>
+#endif
 
 #include <string.h>
 #include <ctype.h>

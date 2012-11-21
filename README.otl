@@ -3,9 +3,9 @@ examples, test or template program.
 
 This branch has only minor modifications from upstream.
 
-    1) The inclusion of fcgi_stdio.h in ctemplate.c
+    1) The building of two versions of the library, fcgi and non-fcgi
 
-This is to make it work in a FastCGI environment.
+Use ctemplate-fcgi when using fcgi_stdio.h from FastCGI
 
     2) Build the library as a dynamic shared object (.so)
 
