@@ -41,8 +41,18 @@
  */
 
 #ifdef _HAVE_FCGI
-/* we need this header, so that the fastcgi stdio wrappers get used */
-#include <fcgi_stdio.h>
+    /* we need this header, so that the fastcgi stdio wrappers get used */
+    #include <fcgi_stdio.h>
+#endif
+
+#ifdef _HAVE_FCGX
+    /* Set things up for the FCGX_ FastCGI API */
+    #include <stdio.h>
+    #include <fcgiapp.h>
+    #undef fputc
+    #define fputc	FCGX_PutChar
+    #undef fputs
+    #define fputs	FCGX_PutS
 #endif
 
 #include <string.h>
@@ -139,7 +149,11 @@ struct tagnode {
 struct template {
     const char *filename;  /* name of template file */
     const char *tmplstr;   /* contents of template file */
+#ifndef _HAVE_FCGX
     FILE *out;             /* template output file pointer */
+#else
+    FCGX_Stream *out;
+#endif
     FILE *errout;          /* error output file pointer */
     tagnode *roottag;      /* root of parse tree */
     const TMPL_fmtlist
@@ -215,7 +229,7 @@ static void *
 mymalloc(size_t size) {
     void *ret = malloc(size);
     if (ret == 0) {
-        fputs("C Template library: out of memory\n", stderr);
+        fprintf(stderr, "C Template library: out of memory\n");
         exit(1);
     }
     return ret;
@@ -229,7 +243,13 @@ mymalloc(size_t size) {
 
 static template *
 newtemplate(const char *filename, const char *tmplstr,
-    const TMPL_fmtlist *fmtlist, FILE *out, FILE *errout)
+    const TMPL_fmtlist *fmtlist,
+#ifndef _HAVE_FCGX
+    FILE *out,
+#else
+    FCGX_Stream *out,
+#endif
+    FILE *errout)
 {
     template *t;
     FILE *fp;
@@ -238,7 +258,7 @@ newtemplate(const char *filename, const char *tmplstr,
 
     if (tmplstr == 0 && filename == 0) {
         if (errout != 0) {
-            fputs("C Template library: no template specified\n", errout);
+            fprintf(errout, "C Template library: no template specified\n");
         }
         return 0;
     }
@@ -1076,7 +1096,14 @@ is_true(const tagnode *iftag, const TMPL_varlist *varlist) {
  */
 
 static void
-write_text(const char *p, int len, FILE *out) {
+write_text(const char *p, int len,
+#ifndef _HAVE_FCGX
+    FILE *out
+#else
+    FCGX_Stream *out
+#endif
+    )
+{
     int i, k;
 
     for (i = 0; i < len; i++) {
@@ -1464,7 +1491,12 @@ TMPL_free_fmtlist(TMPL_fmtlist *fmtlist) {
 int
 TMPL_write(const char *filename, const char *tmplstr,
     const TMPL_fmtlist *fmtlist, const TMPL_varlist *varlist,
-    FILE *out, FILE *errout)
+#ifndef _HAVE_FCGX
+    FILE *out,
+#else
+    FCGX_Stream *out,
+#endif
+    FILE *errout)
 {
     int ret;
     template *t;
@@ -1490,7 +1522,13 @@ TMPL_write(const char *filename, const char *tmplstr,
  */
 
 void
-TMPL_encode_entity(const char *value, FILE *out) {
+TMPL_encode_entity(const char *value,
+#ifndef _HAVE_FCGX
+    FILE *out
+#else
+    FCGX_Stream *out
+#endif
+    ) {
     for (; *value != 0; value++) {
         switch(*value) {
 
@@ -1532,7 +1570,14 @@ TMPL_encode_entity(const char *value, FILE *out) {
 /* TMPL_encode_url() does URL encoding (%xx)  */
 
 void
-TMPL_encode_url(const char *value, FILE *out) {
+TMPL_encode_url(const char *value,
+#ifndef _HAVE_FCGX
+    FILE *out
+#else
+    FCGX_Stream *out
+#endif
+    )
+{
     static const char hexdigit[] = "0123456789ABCDEF";
     int c;
 

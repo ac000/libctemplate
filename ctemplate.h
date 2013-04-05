@@ -8,10 +8,20 @@
 #ifndef _CTEMPLATE_H
 #define _CTEMPLATE_H
 
+#ifdef _HAVE_FCGX
+#include <fcgiapp.h>
+#endif
+
 typedef struct TMPL_varlist TMPL_varlist;
 typedef struct TMPL_loop  TMPL_loop;
 typedef struct TMPL_fmtlist TMPL_fmtlist;
-typedef void (*TMPL_fmtfunc) (const char *, FILE *);
+typedef void (*TMPL_fmtfunc) (const char *,
+#ifndef _HAVE_FCGX
+    FILE *
+#else
+    FCGX_Stream *
+#endif
+    );
 
 /*
 
@@ -35,10 +45,27 @@ void TMPL_free_fmtlist(TMPL_fmtlist *fmtlist);
 
 int TMPL_write(const char *filename, const char *tmplstr,
     const TMPL_fmtlist *fmtlist, const TMPL_varlist *varlist,
-    FILE *out, FILE *errout);
+#ifndef _HAVE_FCGX
+    FILE *out,
+#else
+    FCGX_Stream *out,
+#endif
+    FILE *errout);
 
-void TMPL_encode_entity(const char *value, FILE *out);
+void TMPL_encode_entity(const char *value,
+#ifndef _HAVE_FCGX
+    FILE *out
+#else
+    FCGX_Stream *out
+#endif
+);
 
-void TMPL_encode_url   (const char *value, FILE *out);
+void TMPL_encode_url   (const char *value,
+#ifndef _HAVE_FCGX
+    FILE *out
+#else
+    FCGX_Stream *out
+#endif
+    );
 
 #endif

@@ -1,6 +1,6 @@
 Name:		libctemplate
 Version:	1.4.0
-Release:	1.otl%{?dist}
+Release:	2.otl%{?dist}
 Summary:	A C HTML Template Library
 
 Group:		System Environment/Libraries
@@ -30,9 +30,11 @@ rm -rf $RPM_BUILD_ROOT
 install -Dp -m644 ctemplate.h $RPM_BUILD_ROOT/%{_includedir}/ctemplate.h
 install -Dp -m0755 libctemplate.so.%{version} $RPM_BUILD_ROOT/%{_libdir}/libctemplate.so.%{version}
 install -Dp -m0755 libctemplate-fcgi.so.%{version} $RPM_BUILD_ROOT/%{_libdir}/libctemplate-fcgi.so.%{version}
+install -Dp -m0755 libctemplate-fcgx.so.%{version} $RPM_BUILD_ROOT/%{_libdir}/libctemplate-fcgx.so.%{version}
 cd $RPM_BUILD_ROOT/%{_libdir}
 ln -s libctemplate.so.%{version} libctemplate.so
 ln -s libctemplate-fcgi.so.%{version} libctemplate-fcgi.so
+ln -s libctemplate-fcgx.so.%{version} libctemplate-fcgx.so
 cd -
 
 %post -p /sbin/ldconfig
@@ -49,5 +51,8 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Fri Apr 05 2013 Andrew Clayton <andrew@opentechlabs.co.uk> - 1.4.0-2
+- Include libctemplate-fcgx
+
 * Wed Nov 21 2012 Andrew Clayton <andrew@opentechlabs.co.uk> - 1.4.0-1
 - Initial RPM of libctemplate
