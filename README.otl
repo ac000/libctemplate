@@ -3,9 +3,10 @@ examples, test or template program.
 
 This branch has only minor modifications from upstream.
 
-    1) The building of two versions of the library, fcgi and non-fcgi
+    1) The building of three versions of the library, fcgi, fcgx and non-fcgi
 
-Use ctemplate-fcgi when using fcgi_stdio.h from FastCGI
+Use libctemplate-fcgi when using the FCGI_ stdio wrapper API.
+Use libctemplate-fcgx when using the FCGX_ API
 
     2) Build the library as a dynamic shared object (.so)
 
